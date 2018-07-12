@@ -19,7 +19,7 @@ class RedisPageService {
     val pages: List<Page>
         get() {
 
-            val client = RedisClient.create("redis://redis.test42.svc")
+            val client = RedisClient.create("redis://redis.test43.svc")
             val connection = client.connect()
             val sync = connection.sync()
             val value = sync.get("pages") as String
@@ -39,7 +39,7 @@ class RedisPageService {
 
 
     fun getPage(id: String, locale: Locale): Page {
-        val client = RedisClient.create("redis://redis.test42.svc")
+        val client = RedisClient.create("redis://redis.test43.svc")
         val connection = client.connect()
         val sync = connection.sync()
         val value = sync.get(id) as String
