@@ -3,6 +3,4 @@ VOLUME /tmp
 ARG JAR_FILE
 ADD ${JAR_FILE} app.jar
 EXPOSE 8080 8081
-#change user to app user
-USER app:users
 ENTRYPOINT ["java","-Dspring.profiles.active=prod","-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
