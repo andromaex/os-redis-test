@@ -1,10 +1,25 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
+
 <head> 
     <title>Getting Started: Serving Web Content</title> 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
     <p th:text="'Hello, ' + ${name} + '!'" />
+
+
+<form method="post" action="/getPages" >
+   <div>
+       Name:
+    <input type="text" name="name">
+       <input type="submit" value="Submit">
+
+   </div>
+
+</form>
+
+    <li th:each="page: ${avblPages}">
+        <a th:href="@{/page/{pageId}/{locale}(pageId=${page.id},locale=${#locale})}" th:text="${page.id}">@PageTitle@</a> (<span th:text="${#locale}"></span>)
+    </li>
 </body>
 </html>

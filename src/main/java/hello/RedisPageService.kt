@@ -12,17 +12,32 @@ import crisp.explore.model.Page
 import crisp.explore.model.PageName
 
 import io.lettuce.core.RedisClient
+import io.lettuce.core.api.StatefulRedisConnection
+import org.springframework.beans.factory.annotation.Autowired
+import org.slf4j.LoggerFactory
+
 
 @Service
 class RedisPageService {
+    @Autowired
+    lateinit var connectionProperties: ConnectionProperties
+    private val logger = LoggerFactory.getLogger(RedisPageService::class.java)
+
+
+    fun getRedisConnection(): StatefulRedisConnection<String, String> {
+        logger.info("got redis url:" + connectionProperties.hostname)
+        val client = RedisClient.create("redis://" + connectionProperties.hostname)
+        return client.connect()
+    }
 
     val pages: List<Page>
         get() {
-
-            val client = RedisClient.create("redis://redis.test43.svc")
-            val connection = client.connect()
-            val sync = connection.sync()
-            val value = sync.get("pages") as String
+            val sync = getRedisConnection().sync()
+            var value = sync.get("pages")
+            if (value == null) {
+                createStub()
+            }
+            value = sync.get("pages") as String
             val mapper = ObjectMapper().registerModule(KotlinModule())
             val pl = ArrayList<Page>()
             try {
@@ -37,11 +52,39 @@ class RedisPageService {
             return pl
         }
 
+    fun addPage(name: String): String {
+        logger.info("addPage with:"+name)
+        val sync = getRedisConnection().sync()
+        val mapper = ObjectMapper().registerModule(KotlinModule())
+        var pageName = PageName(name)
+        val value = sync.get("pages") as String
+        val pageNames = mapper.readValue(value, Array<PageName>::class.java)
+        var newPages=pageNames.plus(pageName)
+        try {
+            val newPagesStr = mapper.writeValueAsString(newPages)
+            logger.info("new pages Str" + newPagesStr)
+            sync.set("pages", newPagesStr)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return name;
+    }
+
+
+    fun createStub() {
+        val sync = getRedisConnection().sync()
+        val stub = "[{\"name\":\"homepage\"},{\"name\":\"campaign\"},{\"name\":\"onepagecampaign\"}]"
+        try {
+            sync.set("pages", stub)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+    }
 
     fun getPage(id: String, locale: Locale): Page {
-        val client = RedisClient.create("redis://redis.test43.svc")
-        val connection = client.connect()
-        val sync = connection.sync()
+
+        val sync = getRedisConnection().sync()
         val value = sync.get(id) as String
         val mapper = ObjectMapper().registerModule(KotlinModule())
         var p = Page(id, EPageType.ERROR, EPageStatus.DRAFT, null, null)
